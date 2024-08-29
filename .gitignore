@@ -163,6 +163,3 @@ cython_debug/
 
 # artifacts
 artifacts/
-
-# raw data
-raw_data/
