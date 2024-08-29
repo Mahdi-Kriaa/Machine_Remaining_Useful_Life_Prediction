@@ -162,7 +162,7 @@ cython_debug/
 #.idea/
 
 # artifacts
-artifacts
+artifacts/
 
 # raw data
-raw_data
+raw_data/
