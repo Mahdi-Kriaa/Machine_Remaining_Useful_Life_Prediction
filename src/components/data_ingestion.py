@@ -2,11 +2,12 @@ import os
 import sys
 from src.exception import CustomException
 from src.logger import logging
-import pandas as pd
+
 
 # data processing
+import pandas as pd
 from sklearn.model_selection import train_test_split
-from src.utils import long_to_wide_form, transform_dataframe
+from src.utils import transform_dataframe
 from dataclasses import dataclass
 
 @dataclass
@@ -47,7 +48,7 @@ class data_ingestor:
             df_errors = df_errors.groupby(by=["datetime", "machineID"], as_index=False).count()
             df_errors.rename(columns={"errorID": "error_count"}, inplace=True)
                         
-            # create an failures comonent count column for each datetime and machine id pair
+            # create a failures component count column for each datetime and machine id pair
             df_failures = df_failures.groupby(by=["datetime", "machineID"], as_index=False).count()
             df_failures.rename(columns={"failure": "failure_component_count"}, inplace=True)
 
@@ -66,10 +67,9 @@ class data_ingestor:
             df_transformed.reset_index(inplace=True, drop=True) # reset index
 
             # splitting dataset into training, validation and testing data
-            training_data, temp_data = train_test_split(df_maintenance, test_size=0.3, random_state=42)
+            training_data, temp_data = train_test_split(df_transformed, test_size=0.3, random_state=42)
             validation_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
 
-           
             # save train and test data into csv files
             training_data.to_csv(self.ingestion_config.training_data_path,index=False,header=True)
             validation_data.to_csv(self.ingestion_config.validation_data_path,index=False,header=True)
