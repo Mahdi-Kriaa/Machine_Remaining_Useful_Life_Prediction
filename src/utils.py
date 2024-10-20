@@ -1,15 +1,15 @@
 import os
 import sys
 
-import numpy as np 
 import pandas as pd
 import pickle
-from sklearn.metrics import make_scorer, r2_score
-from sklearn.model_selection import GridSearchCV
+
+import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from tabulate import tabulate
 
 from src.exception import CustomException
 
-import logging
 
 def save_object(file_path, obj):
     # this function saves a python object in pkl format
@@ -22,26 +22,6 @@ def save_object(file_path, obj):
     except Exception as e:
         raise CustomException(e, sys)
     
-def find_best_hyperparameters(models_params, X_train, y_train, score):
-    """
-    this function return a dictionnary with models names as keys and 
-    their best hyperparameters and corresponding scores as values
-    """
-    try :
-        best_params = dict()
-        for model_name in models_params.keys():
-            model = models_params[model_name][0]
-            model_params = models_params[model_name][1]
-            grid_search = GridSearchCV(model, model_params,
-                                        scoring=make_scorer(score), error_score="raise")
-            grid_search.fit(X_train, y_train)
-            best_params[model_name] = [grid_search.best_params_, grid_search.best_score_]
-            print(f"{model_name} successfully completed")
-        return best_params
-    
-    except Exception as e:
-        raise CustomException(e, sys)
-    
 def load_object(file_path):
     # this function load a python object saved in pkl format
     try:
@@ -51,9 +31,9 @@ def load_object(file_path):
     except Exception as e:
         raise CustomException(e, sys)
 
-
 def long_to_wide_form(data, n_in=1, n_out=1, dropnan=True, target=[], exep=[]):
     # this function transform a long form dataframe to wide form one
+
     n_vars = 1 if type(data) is list else data.shape[1]
     cols, namen = list(),list()
     vars = list(data.columns)
@@ -83,43 +63,80 @@ def long_to_wide_form(data, n_in=1, n_out=1, dropnan=True, target=[], exep=[]):
 
 def transform_dataframe(df):
     # this function process each machine id data in a separate dataframe and then combine them in a single one
-    
+
     df_list = []
     for machine_id in df["machineID"].unique():
-        # keep only one machine id
-        df_maintenance_temp = df[df["machineID"]==machine_id]
+        try:
+            # keep only one machine id
+            df_maintenance_temp = df[df["machineID"]==machine_id]
 
-        # resample dataframe to daily frequency
-        df_maintenance_temp = df_maintenance_temp.resample("d").agg({"volt":"mean", "rotate":"mean", "pressure":"mean", 
-                                                                    "vibration":"mean", "model":"first", "age":"first", 
-                                                                    "comp_count":"sum", "error_count":"sum", 
-                                                                    "failure_component_count":"sum"})
+            # resample dataframe to daily frequency
+            df_maintenance_temp = df_maintenance_temp.resample("d").agg({"volt":"mean", "rotate":"mean", "pressure":"mean", 
+                                                                        "vibration":"mean", "model":"first", "age":"first", 
+                                                                        "comp_count":"sum", "error_count":"sum", 
+                                                                        "failure_component_count":"sum"})
 
-        # remove rows with unknown RUL value
-        failures_dates = df_maintenance_temp[df_maintenance_temp["failure_component_count"]!=0].index
-        first_failure_date = failures_dates[0]
-        last_failure_date = failures_dates[-1]
-        df_maintenance_temp = df_maintenance_temp[(df_maintenance_temp.index>=first_failure_date) & (df_maintenance_temp.index<=last_failure_date)]
+            # define failures dates
+            failures_dates = df_maintenance_temp[df_maintenance_temp["failure_component_count"]!=0].index
 
-        # add RUL column to the dataframe
-        rul_list = []
-        j = 0
-        failure_date = failures_dates[0] 
-        for i in df_maintenance_temp.index:
-            if df_maintenance_temp.loc[i, "failure_component_count"] != 0:
-                rul_list.append(0)
-                if j<(len(failures_dates)-1):
-                    j += 1
-                    failure_date = failures_dates[j]     
-            else:
-                rul_list.append((failure_date-i).days)
-        df_maintenance_temp["RUL"] = rul_list
+            # remove rows with unknown remaining useful life
+            df_maintenance_temp = df_maintenance_temp[df_maintenance_temp.index<=failures_dates[-1]]
 
-        df_maintenance_temp = long_to_wide_form(data=df_maintenance_temp, n_in=30, exep=["model", "age", "RUL"])
-        
-        df_list.append(df_maintenance_temp) # add dataframe
-        df_processed = pd.concat(df_list) # combine dataframes
+            # add RUL column to the dataframe
+            rul_list = []
+            j = 0
+            failure_date = failures_dates[0] 
+            for i in df_maintenance_temp.index:
+                if df_maintenance_temp.loc[i, "failure_component_count"] != 0:
+                    rul_list.append(0)
+                    if j<(len(failures_dates)-1):
+                        j += 1
+                        failure_date = failures_dates[j]     
+                else:
+                    rul_list.append((failure_date-i).days)
+            df_maintenance_temp["RUL"] = rul_list
 
-        return(df_processed)
+            df_maintenance_temp = long_to_wide_form(data=df_maintenance_temp, n_in=30, exep=["model", "age", "RUL"])
+            
+            df_list.append(df_maintenance_temp) # add dataframe
+            df_transformed = pd.concat(df_list) # combine dataframes
+        except: pass
+    return(df_transformed)
 
+def plot_history(history, training_metric, validation_metric, figsize=(8,8)):
+        # get training and validation metric
+        train_metric = history.history[training_metric]
+        val_metric = history.history[validation_metric]
+        # training and validation loss
+        train_loss = history.history['loss']
+        val_loss = history.history['val_loss']
+        # plot training and validation accuracy
+        plt.figure(figsize=figsize)
+        plt.subplot(2, 1, 1)
+        plt.plot(train_metric, label=training_metric)
+        plt.plot(val_metric, label=validation_metric)
+        plt.legend()
+        plt.ylabel(training_metric)
+        plt.ylim([min(plt.ylim()),1])
+        # plot training and validation loss
+        plt.subplot(2, 1, 2)
+        plt.plot(train_loss, label="Training Loss")
+        plt.plot(val_loss, label="Validation Loss")
+        plt.legend()
+        plt.ylabel("Cross Entropy")
+        plt.ylim([0,1.0])
+        plt.xlabel("epoch")
+        plt.show()
 
+def regression_metrics(model, X_train, X_test, y_train, y_test):
+    # this function calculate the regression model metrics
+    
+    y_train_pred = model.predict(X_train)
+    y_test_pred = model.predict(X_test)
+    tab = tabulate([["Metric", "Training Set", "Test Set"],
+                  ["r2", r2_score(y_train, y_train_pred), r2_score(y_test, y_test_pred)],
+                  ["MSE", mean_squared_error(y_train, y_train_pred), mean_squared_error(y_test, y_test_pred)],
+                  ["MAE", mean_absolute_error(y_train, y_train_pred), mean_absolute_error(y_test, y_test_pred)],
+                  ["RMSE", mean_squared_error(y_train, y_train_pred, squared=False), mean_squared_error(y_test, y_test_pred, squared=False)]],
+                headers='firstrow', numalign="left")
+    return tab
