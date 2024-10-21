@@ -166,5 +166,3 @@ artifacts/
 
 # tests
 api_test.py
-notebooks/api_test_data.json
-

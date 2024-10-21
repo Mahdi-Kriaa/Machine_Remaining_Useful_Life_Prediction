@@ -124,7 +124,6 @@ def plot_history(history, training_metric, validation_metric, figsize=(8,8)):
         plt.plot(val_loss, label="Validation Loss")
         plt.legend()
         plt.ylabel("Cross Entropy")
-        plt.ylim([0,1.0])
         plt.xlabel("epoch")
         plt.show()
 
