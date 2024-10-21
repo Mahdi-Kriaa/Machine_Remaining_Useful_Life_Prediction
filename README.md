@@ -1,4 +1,4 @@
-# Machines Remaining Useful Life Prediction
+# Machine Remaining Useful Life Prediction
 
 ## Objective
 
@@ -35,27 +35,26 @@ The datasets will be analyzed and then we will merge data and perform feature en
 
 Models used in this project are the following :
 
-    - Dummy Regressor as baseline model (mean)
+    - dummy regressor as baseline model (mean strategy)
     - LSTM-MLP hybrid neural network
     
 ### Model Evaluation & Results
 
-The following are the Mean Absolute Error scores for each model on the test set:
+The following are the mean absolute error scores for each model on the test set:
 
-    - Dummy Regressor as baseline model (mean): 
-    - LSTM-MLP hybrid neural network: 
+    - baseline model (mean): 28.41 days
+    - LSTM-MLP hybrid neural network: 1.51 days
 
-The final model chosen was a tuned stacking regressor . For the testing set, `57.81%` of the variance in sales was explained by features and the Mean Absolute 
-Error score has a calculation of `$1102.73`.
+We see that the LSTM-MLP hybrid neural network performs very well on the test set, which is useful for anticipating machine failures with good precision. However, we note that the model a root mean squared error score of 4.02 days wich is significantly higher than the mean absolute error and this shows us that it has made some larger errors on some samples.
 
 ## Recommendations
-- The use of this model to predict the sales of an item in a store is reliable for an error tolerance of 812$.
-- To boost sales, we must mainly choose the optimal items prices and outlet type.
+- The use of this model to predict machines failures is reliable for an error tolerance of 2 days.
+- The data used for prediction must be accurate and without missing values.
 
 ## Limitations & Next Steps
 
-The model is not reliable for an error tolerance less than 812$, so, other features can be added like historical sales and economic indicators, also the
-data samples number is not very high and providing more samples could improve the model performance.
+- The model is not good enough for some data points wich can be adressed with providing more data and improving the model architecture
+- An explainable AI can be performed to identify feature importances and understand the machines behaviours.
 
 
  

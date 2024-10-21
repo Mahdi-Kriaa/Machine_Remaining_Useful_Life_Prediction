@@ -8,17 +8,16 @@ from src.logger import logging
 from src.components.data_transformation import data_transformer
 
 # modeling
-from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import Activation, Dropout, LSTM, Dense, TimeDistributed
+from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.ops import concatenate
-from tensorflow.keras.callbacks import ModelCheckpoint, BackupAndRestore, EarlyStopping
+from tensorflow.keras.callbacks import ModelCheckpoint, BackupAndRestore
 from tensorflow.keras import Input, Model
 from tensorflow.keras.optimizers import Adam
 
 @dataclass
 class model_training_config:
-    trained_model_file_path=os.path.join("artifacts/python_objects/callbacks/trained_model.keras")
-    backup_file_dir=os.path.join("artifacts/python_objects/callbacks/backup")
+    nn_model_file_path=os.path.join("artifacts/callbacks/nn_model_checkpoint.keras")
+    backup_file_dir=os.path.join("artifacts/callbacks/backup")
 
 class model_trainer:
     def __init__(self):
@@ -53,36 +52,37 @@ class model_trainer:
             # test inputs
             time_steps_test_input = X_test[:, :-5].reshape((-1,30,7))
             non_time_steps_test_input = X_test[:, -5:]
-
-            # define two sets of inputs
+            
+            # define time steps and non time steps inputs
             time_steps_inputs = Input(shape=(30,7))
             non_time_steps_inputs = Input(shape=(5,))
-            # define the first branch operating on the first input
-            x1 = LSTM(100, activation="relu", return_sequences=True)(time_steps_inputs)
-            x1 = LSTM(20, activation="relu")(x1)
-            x1 = Model(inputs=time_steps_inputs, outputs=x1)
-            # tdefine he second branch opreating on the second input
-            x2 = Dense(64, activation="relu")(non_time_steps_inputs)
-            x2 = Dense(32, activation="relu")(x2)
-            x2 = Dense(4, activation="relu")(x2)
-            x2 = Model(inputs=non_time_steps_inputs, outputs=x2)
-            # combine the output of the two branches
-            combined = concatenate([x1.output, x2.output], axis=1)
-            # apply a FC layer and then a regression prediction on the ombined outputs
-            x3 = Dense(2, activation="relu")(combined)
-            x3 = Dense(1, activation="relu")(x3)
-            # our model will accept the inputs of the two branches and
-            # then output a single value
-            model = Model(inputs=[x1.input, x2.input], outputs=x3)
+
+            # define the lstm layers for the time steps inputs
+            x = LSTM(64, activation="relu", return_sequences=True)(time_steps_inputs)
+            x = LSTM(64, activation="relu", return_sequences=True)(x)
+            x = LSTM(16, activation="relu")(x)
+            x = Model(inputs=time_steps_inputs, outputs=x)
+
+            # combine the outputs of the lstm layers outputs and the other inputs
+            combined = concatenate([x.output, non_time_steps_inputs], axis=1)
+
+            # define dense layers
+            y = Dense(64, activation="relu")(combined)
+            y = Dense(64, activation="relu")(y)
+            y = Dense(4, activation="relu")(y)
+            y = Dense(1, activation="relu")(y)
+
+            # define the model
+            nn_model = Model(inputs=[x.input, non_time_steps_inputs], outputs=y)
 
            # compile model
-            model.compile(loss="mse",
+            nn_model.compile(loss="mse",
                         optimizer=Adam(learning_rate=0.0005),
                         metrics=["mae"])
             
             # define callbacks for the model
             model_checkpoint = ModelCheckpoint(
-                filepath=self.model_trainer_config.trained_model_file_path,
+                filepath=self.model_trainer_config.nn_model_file_path,
                 monitor="val_loss",
                 mode="min",
                 save_best_only=True)
@@ -92,10 +92,10 @@ class model_trainer:
             logging.info("The model training begin")
             
             # train model
-            model_history = model.fit(x=[time_steps_train_input, non_time_steps_train_input],
+            model_history = nn_model.fit(x=[time_steps_train_input, non_time_steps_train_input],
                     y=y_train,                         
                     batch_size=32,
-                    epochs=2,
+                    epochs=700,
                     validation_data=([time_steps_val_input, non_time_steps_val_input], y_val),
                     validation_batch_size=32,
                     callbacks=model_callbacks) 

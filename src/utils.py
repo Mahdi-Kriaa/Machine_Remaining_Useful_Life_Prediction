@@ -104,28 +104,31 @@ def transform_dataframe(df):
     return(df_transformed)
 
 def plot_history(history, training_metric, validation_metric, figsize=(8,8)):
+        # this function display the training and validation metrics
+
         # get training and validation metric
         train_metric = history.history[training_metric]
         val_metric = history.history[validation_metric]
-        # training and validation loss
+
+        # get training and validation loss
         train_loss = history.history['loss']
         val_loss = history.history['val_loss']
-        # plot training and validation accuracy
+
+        # plot training and validation mae
         plt.figure(figsize=figsize)
         plt.subplot(2, 1, 1)
         plt.plot(train_metric, label=training_metric)
         plt.plot(val_metric, label=validation_metric)
         plt.legend()
-        plt.ylabel(training_metric)
-        plt.ylim([min(plt.ylim()),1])
+        plt.ylabel("MAE")
+
         # plot training and validation loss
         plt.subplot(2, 1, 2)
-        plt.plot(train_loss, label="Training Loss")
-        plt.plot(val_loss, label="Validation Loss")
+        plt.plot(train_loss, label="loss")
+        plt.plot(val_loss, label="val_loss")
         plt.legend()
-        plt.ylabel("Cross Entropy")
-        plt.ylim([0,1.0])
-        plt.xlabel("epoch")
+        plt.ylabel("Loss")
+        plt.xlabel("Epoch")
         plt.show()
 
 def regression_metrics(model, X_train, X_test, y_train, y_test):
