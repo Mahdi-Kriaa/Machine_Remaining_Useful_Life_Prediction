@@ -166,3 +166,4 @@ artifacts/
 
 # tests
 api_test.py
+api_test_data.json
