@@ -45,7 +45,7 @@ The following are the mean absolute error scores for each model on the test set:
     - baseline model (mean): 28.41 days
     - LSTM-MLP hybrid neural network: 1.51 days
 
-We see that the LSTM-MLP hybrid neural network performs very well on the test set, which is useful for anticipating machine failures with good precision. However, we note that the model a root mean squared error score of 4.02 days wich is significantly higher than the mean absolute error and this shows us that it has made some larger errors on some samples.
+We see that the LSTM-MLP hybrid neural network performs very well on the test set, which is useful for anticipating machine failures with good precision. However, we note that the model has a root mean squared error score of 4.02 days wich is significantly higher than the mean absolute error and this shows us that it has made some larger errors on some samples.
 
 ## Recommendations
 - The use of this model to predict machines failures is reliable for an error tolerance of 2 days.
@@ -53,7 +53,7 @@ We see that the LSTM-MLP hybrid neural network performs very well on the test se
 
 ## Limitations & Next Steps
 
-- The model is not good enough for some data points wich can be adressed with providing more data and improving the model architecture
+- The model is not good enough for some data points wich can be adressed with providing more data and improving the model architecture.
 - An explainable AI can be performed to identify feature importances and understand the machines behaviours.
 
 
